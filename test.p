@@ -1,8 +1,14 @@
-[a]
+[a,b]
 
-FOR a := 8 TO 15 DO
+FOR a := 1 TO 10 DO
 BEGIN
-	DISPLAY a;
-	DISPLAY a;
-	DISPLAY a
+	b := 1;
+	WHILE b < a DO
+	BEGIN
+		IF a%b == 0 THEN
+		BEGIN
+			DISPLAY b
+		END;
+		b := b + 1
+	END
 END.

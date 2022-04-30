@@ -483,7 +483,7 @@ TYPE SimpleExpression() {
 				outputWrite("subq %rbx, %rax", "SUB");
 				break;
 			default:
-				Error("opérateur additif inconnu");
+				Error("Opérateur Additif (OPADD) attendu.");
 		}
 		outputWrite("push %rax");
 	}
@@ -492,44 +492,43 @@ TYPE SimpleExpression() {
 
 // Term := Factor {MultiplicativeOperator Factor}
 TYPE Term() {
-	OPMUL mulop;
 	TYPE aReturn;
 	aReturn = Factor();
-	while(current==MULOP){
-		mulop=MultiplicativeOperator();		// Save operator in local variable
+	while(compareType(MULOP)){
+		OPMUL mulop = MultiplicativeOperator();		// Save operator in local variable
 		TYPE newReturn = Factor();
 		if(aReturn != newReturn) {
 			Error("Types non compatibles (Term).");
 		}
-		cout << "\tpop %rbx"<<endl;	// get first operand
-		cout << "\tpop %rax"<<endl;	// get second operand
+		outputWrite("pop %rbx", "First operand");
+		outputWrite("pop %rax", "Second operand");
 		switch(mulop){
 			case AND:
-				cout << "\tmulq	%rbx"<<endl;	// a * b -> %rdx:%rax
-				cout << "\tpush %rax\t# AND"<<endl;	// store result
+				outputWrite("mulq %rbx");
+				outputWrite("push %rax", "AND");
 				break;
 			case MUL:
-				cout << "\tmulq	%rbx"<<endl;	// a * b -> %rdx:%rax
-				cout << "\tpush %rax\t# MUL"<<endl;	// store result
+				outputWrite("mulq %rbx");
+				outputWrite("push %rax", "MUL");
 				break;
 			case DIV:
-				cout << "\tmovq $0, %rdx"<<endl; 	// Higher part of numerator  
-				cout << "\tdiv %rbx"<<endl;			// quotient goes to %rax
-				cout << "\tpush %rax\t# DIV"<<endl;		// store result
+				outputWrite("movq $0, %rdx");
+				outputWrite("div %rbx"); // Quotient goes to %rax
+				outputWrite("push %rax", "DIV"); // Store quotient
 				break;
 			case MOD:
-				cout << "\tmovq $0, %rdx"<<endl; 	// Higher part of numerator  
-				cout << "\tdiv %rbx"<<endl;			// remainder goes to %rdx
-				cout << "\tpush %rdx\t# MOD"<<endl;		// store result
+				outputWrite("movq $0, %rdx");
+				outputWrite("div %rbx"); // Remainder goes to %rdx
+				outputWrite("push %rdx", "MOD"); // Store remainder
 				break;
 			default:
-				Error("opérateur multiplicatif attendu");
+				Error("Opérateur Multiplicatif (OPMUL) attendu.");
 		}
 	}
 	return(aReturn);
 }
 
-TYPE Factor(void) {
+TYPE Factor() {
 	TYPE aReturn;
 	if(compareType(RPARENT)) {
 		readWord();
@@ -552,63 +551,69 @@ TYPE Factor(void) {
 	return aReturn;
 }
 
-TYPE Number(void) {
+TYPE Number() {
 	outputWrite("push $" + currentWord());
 	readWord();
 	return(UNSIGNED_INT);
 }
 
 // AdditiveOperator := "+" | "-" | "||"
-OPADD AdditiveOperator(void){
+OPADD AdditiveOperator() {
 	OPADD opadd;
-	if(strcmp(lexer->YYText(),"+")==0)
-		opadd=ADD;
-	else if(strcmp(lexer->YYText(),"-")==0)
-		opadd=SUB;
-	else if(strcmp(lexer->YYText(),"||")==0)
-		opadd=OR;
-	else opadd=WTFA;
-	current=(TOKEN) lexer->yylex();
-	return opadd;
+	if(compareWord("+")) {
+		opadd = ADD;
+	} else if(compareWord("-")) {
+		opadd = SUB;
+	} else if(compareWord("||")) {
+		opadd = OR;
+	} else {
+		opadd = WTFA;
+	}
+	readWord();
+	return(opadd);
 }
 
 // MultiplicativeOperator := "*" | "/" | "%" | "&&"
-OPMUL MultiplicativeOperator(void){
+OPMUL MultiplicativeOperator() {
 	OPMUL opmul;
-	if(strcmp(lexer->YYText(),"*")==0)
-		opmul=MUL;
-	else if(strcmp(lexer->YYText(),"/")==0)
-		opmul=DIV;
-	else if(strcmp(lexer->YYText(),"%")==0)
-		opmul=MOD;
-	else if(strcmp(lexer->YYText(),"&&")==0)
-		opmul=AND;
-	else opmul=WTFM;
-	current=(TOKEN) lexer->yylex();
-	return opmul;
+	if(compareWord("*")) {
+		opmul = MUL;
+	} else if(compareWord("/")) {
+		opmul = DIV;
+	} else if(compareWord("%")) {
+		opmul = MOD;
+	} else if(compareWord("&&")) {
+		opmul = AND;
+	} else {
+		opmul = WTFM;
+	}
+	readWord();
+	return(opmul);
 }
 
 // RelationalOperator := "==" | "!=" | "<" | ">" | "<=" | ">="  
-OPREL RelationalOperator(void){
+OPREL RelationalOperator() {
 	OPREL oprel;
-	if(strcmp(lexer->YYText(),"==")==0)
-		oprel=EQU;
-	else if(strcmp(lexer->YYText(),"!=")==0)
-		oprel=DIFF;
-	else if(strcmp(lexer->YYText(),"<")==0)
-		oprel=INF;
-	else if(strcmp(lexer->YYText(),">")==0)
-		oprel=SUP;
-	else if(strcmp(lexer->YYText(),"<=")==0)
-		oprel=INFE;
-	else if(strcmp(lexer->YYText(),">=")==0)
-		oprel=SUPE;
-	else oprel=WTFR;
-	current=(TOKEN) lexer->yylex();
+	if(compareWord("==")) {
+		oprel = EQU;
+	} else if(compareWord("!=")) {
+		oprel = DIFF;
+	} else if(compareWord("<")) {
+		oprel = INF;
+	} else if(compareWord(">")) {
+		oprel = SUP;
+	} else if(compareWord("<=")) {
+		oprel = INFE;
+	} else if(compareWord(">=")) {
+		oprel = SUPE;
+	} else {
+		oprel = WTFR;
+	}
+	readWord();
 	return oprel;
 }
 
-TYPE Identifier(void) {
+TYPE Identifier() {
 	outputWrite("push " + currentWord());
 	readWord();
 	return(UNSIGNED_INT);
