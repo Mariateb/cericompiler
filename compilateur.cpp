@@ -89,7 +89,7 @@ using namespace std;
 		for(int i = 0; i <= tabNeed; i++) {
 			cout << "\t";
 		}
-		cout << "#" << c << endl;
+		cout << "# " << c << endl;
 	}
 // [=======Compilation tools=======]
 	// Variables & Instances
@@ -410,45 +410,49 @@ void DisplayStatement() {
 }
 
 // Expression := SimpleExpression [RelationalOperator SimpleExpression]
-TYPE Expression(void){
+TYPE Expression() {
 	OPREL oprel;
 	TYPE aReturn;
 	aReturn = SimpleExpression();
-	if(current==RELOP){
-		oprel=RelationalOperator();
+	if(compareType(RELOP)){
+		oprel = RelationalOperator();
 		TYPE newReturn = SimpleExpression();
 		if(aReturn != newReturn) {
 			Error("Erreur de type incompatibles (Expression)");
 		}
-		cout << "\tpop %rax"<<endl;
-		cout << "\tpop %rbx"<<endl;
-		cout << "\tcmpq %rax, %rbx"<<endl;
+		outputWrite("pop %rax");
+		outputWrite("pop %rbx");
+		outputWrite("cmpq %rax, %rbx");
+		TagNumber += 1;
+		string expTag = to_string(TagNumber);
+		string expTagString = to_string(TagNumber) + string(":");
 		switch(oprel){
 			case EQU:
-				cout << "\tje Vrai"<<++TagNumber<<"\t# If equal"<<endl;
+				outputWrite("je Vrai" + expTag, "If equal");
 				break;
 			case DIFF:
-				cout << "\tjne Vrai"<<++TagNumber<<"\t# If different"<<endl;
+				outputWrite("jne Vrai" + expTag, "If different");
 				break;
 			case SUPE:
-				cout << "\tjae Vrai"<<++TagNumber<<"\t# If above or equal"<<endl;
+				outputWrite("jae Vrai" + expTag, "If above or equal");
 				break;
 			case INFE:
-				cout << "\tjbe Vrai"<<++TagNumber<<"\t# If below or equal"<<endl;
+				outputWrite("jbe Vrai" + expTag, "If below or equal");
 				break;
 			case INF:
-				cout << "\tjb Vrai"<<++TagNumber<<"\t# If below"<<endl;
+				outputWrite("jb Vrai" + expTag, "If below");
 				break;
 			case SUP:
-				cout << "\tja Vrai"<<++TagNumber<<"\t# If above"<<endl;
+				outputWrite("ja Vrai" + expTag, "If above");
 				break;
 			default:
 				Error("Opérateur de comparaison inconnu");
 		}
-		cout << "\tpush $0\t\t# False"<<endl;
-		cout << "\tjmp Suite"<<TagNumber<<endl;
-		cout << "Vrai"<<TagNumber<<":\tpush $0xFFFFFFFFFFFFFFFF\t\t# True"<<endl;	
-		cout << "Suite"<<TagNumber<<":"<<endl;
+		outputWrite("push $0", "False");
+		outputWrite("jmp Suite" + expTag);
+		outputWrite("Vrai" + expTagString);
+		outputWrite("push $0xFFFFFFFFFFFFFFFF", "True");
+		outputWrite("Suite" + expTagString);
 		return(BOOLEAN);
 	} else {
 		return(aReturn);
@@ -456,38 +460,38 @@ TYPE Expression(void){
 }
 
 // SimpleExpression := Term {AdditiveOperator Term}
-TYPE SimpleExpression(void){
+TYPE SimpleExpression() {
 	OPADD adop;
 	TYPE aReturn;
 	aReturn = Term();
-	while(current==ADDOP){
-		adop=AdditiveOperator();		// Save operator in local variable
+	while(compareType(ADDOP)){
+		adop = AdditiveOperator();		// Save operator in local variable
 		TYPE newReturn = Term();
 		if(aReturn != newReturn) {
 			Error("Erreur de types non compatibles (SimpleExpression)");
 		}
-		cout << "\tpop %rbx"<<endl;	// get first operand
-		cout << "\tpop %rax"<<endl;	// get second operand
+		outputWrite("pop %rbx", "First operand");
+		outputWrite("pop %rax", "Second operand");
 		switch(adop){
 			case OR:
-				cout << "\taddq	%rbx, %rax\t# OR"<<endl;// operand1 OR operand2
+				outputWrite("addq %rbx, %rax", "OR");
 				break;			
 			case ADD:
-				cout << "\taddq	%rbx, %rax\t# ADD"<<endl;	// add both operands
+				outputWrite("addq %rbx, %rax", "ADD");
 				break;			
-			case SUB:	
-				cout << "\tsubq	%rbx, %rax\t# SUB"<<endl;	// substract both operands
+			case SUB:
+				outputWrite("subq %rbx, %rax", "SUB");
 				break;
 			default:
 				Error("opérateur additif inconnu");
 		}
-		cout << "\tpush %rax"<<endl;			// store result
+		outputWrite("push %rax");
 	}
 	return(aReturn);
 }
 
 // Term := Factor {MultiplicativeOperator Factor}
-TYPE Term(void){
+TYPE Term() {
 	OPMUL mulop;
 	TYPE aReturn;
 	aReturn = Factor();
