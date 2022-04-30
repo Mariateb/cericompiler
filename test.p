@@ -2,5 +2,7 @@
 
 FOR a := 8 TO 15 DO
 BEGIN
+	DISPLAY a;
+	DISPLAY a;
 	DISPLAY a
 END.

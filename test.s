@@ -22,6 +22,18 @@ pop %rbx
 	movl $1, %edi
 	movl $0, %eax
 	call __printf_chk@PLT
+	push a
+	pop %rdx	# The value to be displayed
+	movq $FormatString1, %rsi	# '%llu\n'
+	movl $1, %edi
+	movl $0, %eax
+	call __printf_chk@PLT
+	push a
+	pop %rdx	# The value to be displayed
+	movq $FormatString1, %rsi	# '%llu\n'
+	movl $1, %edi
+	movl $0, %eax
+	call __printf_chk@PLT
 push a
 pop %rax
 addq $1, %rax

@@ -308,7 +308,7 @@ void IfStatement() {
 }
 
 // WhileStatement := "WHILE" Expression DO Statement
-void WhileStatement(void) {
+void WhileStatement() {
 	TagNumber += 1;
 	string whileTag = to_string(TagNumber);
 	string whileTagString = to_string(TagNumber) + string(":");
@@ -331,7 +331,7 @@ void WhileStatement(void) {
 }
 
 // ForStatement := "FOR" AssignementStatement "TO" Expression "DO" Statement
-void ForStatement(void) {
+void ForStatement() {
 	TagNumber += 1;
 	string forTag = to_string(TagNumber);
 	string forTagString = to_string(TagNumber) + string(":");
@@ -379,20 +379,20 @@ void ForStatement(void) {
 }
 
 // BlockStatement := "BEGIN" Statement { ";" Statement } "END"
-void BlockStatement(void) {
+void BlockStatement() {
 	if(!checkKeyword("BEGIN")) {
 		Error("Mot clé BEGIN attendu");
 	}
-	current=(TOKEN) lexer->yylex();
+	readWord();
 	Statement();
-	while(strcmp(lexer->YYText(),";")==0) {
-		current=(TOKEN) lexer->yylex();
+	while(compareType(SEMICOLON)) {
+		readWord();
 		Statement();
 	}
 	if(!checkKeyword("END")) {
 		Error("Mot clé END attendu");
 	}
-	current=(TOKEN) lexer->yylex();
+	readWord();
 }
 
 // PrintStatement := "DISPLAY" Expression
