@@ -413,32 +413,32 @@ void DisplayStatement() {
 }
 
 TYPE Identifier(void) {
-	cout << "\tpush "<<lexer->YYText()<<endl;
-	current=(TOKEN) lexer->yylex();
+	outputWrite("push " + currentWord());
+	readWord();
 	return(UNSIGNED_INT);
 }
 
 TYPE Number(void) {
-	cout <<"\tpush $"<<atoi(lexer->YYText())<<endl;
-	current=(TOKEN) lexer->yylex();
+	outputWrite("push $" + currentWord());
+	readWord();
 	return(UNSIGNED_INT);
 }
 
 TYPE Factor(void) {
 	TYPE aReturn;
-	if(current == RPARENT) {
-		current = (TOKEN) lexer->yylex();
+	if(compareType(RPARENT)) {
+		readWord();
 		aReturn = Expression();
-		if(current != LPARENT) {
+		if(!compareType(LPARENT)) {
 			Error("')' était attendu");		// ")" expected
 		} else {
-			current = (TOKEN) lexer->yylex();
+			readWord();
 		}
 	} else {
-		if (current == NUMBER) {
+		if (compareType(NUMBER)) {
 			aReturn = Number();
 		} else {
-				if(current == ID)
+				if(compareType(ID))
 					aReturn = Identifier();
 				else
 					Error("'(' ou chiffre ou lettre attendue");

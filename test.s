@@ -7,28 +7,28 @@ a:	.quad 0
 	.globl main							#The main function must be visible from outside
 main:									#Main function body
 	movq %rsp, %rbp							#Save the position of the stack's top
-	push $8
+push $8
 pop a
 ForLoop1:
-	push $15
+push $15
 pop %rax
 push a
 pop %rbx
 	cmpq %rbx, %rax							#If we got beyond the stopping point, we stop
 	jb ForEnd1							#TO
-	push a
+push a
 	pop %rdx							#The value to be displayed
 	movq $FormatString1, %rsi					#"%llu\n"
 movl $1, %edi
 movl $0, %eax
 call __printf_chk@PLT
-	push a
+push a
 	pop %rdx							#The value to be displayed
 	movq $FormatString1, %rsi					#"%llu\n"
 movl $1, %edi
 movl $0, %eax
 call __printf_chk@PLT
-	push a
+push a
 	pop %rdx							#The value to be displayed
 	movq $FormatString1, %rsi					#"%llu\n"
 movl $1, %edi
