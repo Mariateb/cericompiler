@@ -7,36 +7,27 @@ a:	.quad 0
 	.globl main							#The main function must be visible from outside
 main:									#Main function body
 	movq %rsp, %rbp							#Save the position of the stack's top
-	push $4
-pop a
-WhileLoop1:
-	push a
 	push $8
-	pop %rax
-	pop %rbx
-	cmpq %rax, %rbx
-	jb Vrai2	# If below
-	push $0		# False
-	jmp Suite2
-Vrai2:	push $0xFFFFFFFFFFFFFFFF		# True
-Suite2:
+pop a
+ForLoop1:
+	push $15
 pop %rax
-	cmpq $0, %rax							#If the condition is no longer fulfilled, the loop is finished.
-je WhileEnd1
+push a
+pop %rbx
+	cmpq %rbx, %rax							#If we got beyond the stopping point, we stop
+	jb ForEnd1							#TO
 	push a
 	pop %rdx	# The value to be displayed
 	movq $FormatString1, %rsi	# '%llu\n'
 	movl $1, %edi
 	movl $0, %eax
 	call __printf_chk@PLT
-	push a
-	push $1
-	pop %rbx
-	pop %rax
-	addq	%rbx, %rax	# ADD
-	push %rax
-pop a
-jmp WhileLoop1
-WhileEnd1:
+push a
+pop %rax
+addq $1, %rax
+push %rax
+	pop a								#New value of variable for next check
+jmp ForLoop1
+ForEnd1:
 	movq %rbp, %rsp							#Restore the position of the stack's top
 	ret								#Return from main function

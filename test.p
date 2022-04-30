@@ -1,8 +1,6 @@
 [a]
 
-a := 4;
-WHILE a < 8 DO
+FOR a := 8 TO 15 DO
 BEGIN
-	DISPLAY a;
-	a := a + 1
+	DISPLAY a
 END.

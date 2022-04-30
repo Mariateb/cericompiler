@@ -338,10 +338,10 @@ void ForStatement(void) {
 	if(!checkKeyword("FOR")) {
 		Error("Mot clé FOR attendu");
 	}
-	current=(TOKEN) lexer->yylex();
+	readWord();
 	string laVar = AssignementStatement();
-	cout << "ForLoop" << forTag << ":" << endl;
-	bool isTo;
+	outputWrite("ForLoop" + forTagString);
+	bool isTo; // Works as a check to see if we have a TO or a DOWNTO
 	if(checkKeyword("TO")) {
 		isTo = true;
 	} else if(checkKeyword("DOWNTO")) {
@@ -349,33 +349,33 @@ void ForStatement(void) {
 	} else {
 		Error("Mots-clés TO ou DOWNTO attendus.");
 	}
-	current=(TOKEN) lexer->yylex();
+	readWord();
 	Expression();
-	cout << "\tpop %rax" << endl;
-	cout << "\tpush " << laVar << endl;
-	cout << "\tpop %rbx" << endl;
-	cout << "\tcmpq %rbx, %rax" << endl;
+	outputWrite("pop %rax");
+	outputWrite("push " + laVar);
+	outputWrite("pop %rbx");
+	outputWrite("cmpq %rbx, %rax", "If we got beyond the stopping point, we stop");
 	if(isTo) {
-		cout << "\tjb ForEnd" << forTag << endl;
+		outputWrite("jb ForEnd" + forTag, "TO");
 	} else {
-		cout << "\tja ForEnd" << forTag << endl;
+		outputWrite("ja ForEnd" + forTag, "DOWNTO");
 	}
 	if(!checkKeyword("DO")) {
 		Error("Mot clé DO attendu");
 	}
-	current=(TOKEN) lexer->yylex();
+	readWord();
 	Statement();
-	cout << "\tpush " << laVar << endl;
-	cout << "\tpop %rax" << endl;
+	outputWrite("push " + laVar);
+	outputWrite("pop %rax");
 	if(isTo) {
-		cout << "\taddq $1, %rax" << endl;
+		outputWrite("addq $1, %rax");
 	} else {
-		cout << "\tsubq $1, %rax" << endl;
+		outputWrite("subq $1, %rax");
 	}
-	cout << "\tpush %rax" << endl;
-	cout << "\tpop " << laVar << endl;
-	cout << "\tjmp ForLoop" << forTag << endl;
-	cout << "ForEnd" << forTag << ":" << endl;
+	outputWrite("push %rax");
+	outputWrite("pop " + laVar, "New value of variable for next check");
+	outputWrite("jmp ForLoop" + forTag);
+	outputWrite("ForEnd" + forTagString);
 }
 
 // BlockStatement := "BEGIN" Statement { ";" Statement } "END"
