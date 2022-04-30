@@ -396,20 +396,20 @@ void BlockStatement() {
 }
 
 // PrintStatement := "DISPLAY" Expression
-void DisplayStatement(void) {
+void DisplayStatement() {
 	if(!checkKeyword("DISPLAY")) {
 		Error("Mot clé DISPLAY attendu");
 	}
-	current=(TOKEN) lexer->yylex();
+	readWord();
 	TYPE typeDisplay = Expression();
 	if(typeDisplay != UNSIGNED_INT) {
 		Error("Entier attendu.");
 	}
-	cout << "\tpop %rdx	# The value to be displayed" << endl;
-	cout << "\tmovq $FormatString1, %rsi	# '%llu\\n'" << endl;
-	cout << "\tmovl $1, %edi" << endl;
-	cout << "\tmovl $0, %eax" << endl;
-	cout << "\tcall __printf_chk@PLT" << endl;
+	outputWrite("pop %rdx", "The value to be displayed");
+	outputWrite("movq $FormatString1, %rsi", "\"%llu\\n\"");
+	outputWrite("movl $1, %edi");
+	outputWrite("movl $0, %eax");
+	outputWrite("call __printf_chk@PLT");
 }
 
 TYPE Identifier(void) {

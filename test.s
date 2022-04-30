@@ -17,23 +17,23 @@ pop %rbx
 	cmpq %rbx, %rax							#If we got beyond the stopping point, we stop
 	jb ForEnd1							#TO
 	push a
-	pop %rdx	# The value to be displayed
-	movq $FormatString1, %rsi	# '%llu\n'
-	movl $1, %edi
-	movl $0, %eax
-	call __printf_chk@PLT
+	pop %rdx							#The value to be displayed
+	movq $FormatString1, %rsi					#"%llu\n"
+movl $1, %edi
+movl $0, %eax
+call __printf_chk@PLT
 	push a
-	pop %rdx	# The value to be displayed
-	movq $FormatString1, %rsi	# '%llu\n'
-	movl $1, %edi
-	movl $0, %eax
-	call __printf_chk@PLT
+	pop %rdx							#The value to be displayed
+	movq $FormatString1, %rsi					#"%llu\n"
+movl $1, %edi
+movl $0, %eax
+call __printf_chk@PLT
 	push a
-	pop %rdx	# The value to be displayed
-	movq $FormatString1, %rsi	# '%llu\n'
-	movl $1, %edi
-	movl $0, %eax
-	call __printf_chk@PLT
+	pop %rdx							#The value to be displayed
+	movq $FormatString1, %rsi					#"%llu\n"
+movl $1, %edi
+movl $0, %eax
+call __printf_chk@PLT
 push a
 pop %rax
 addq $1, %rax
