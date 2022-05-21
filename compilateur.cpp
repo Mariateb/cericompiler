@@ -22,6 +22,7 @@
 #include <iostream>
 #include <cstdlib>
 #include <set>
+#include <map>
 #include <FlexLexer.h>
 #include "tokeniser.h"
 #include <cstring>
@@ -68,7 +69,7 @@ using namespace std;
 	// Functions
 	void outputWrite(string s) {
 		// If the line is not a label, tab it
-		if(!s.find(":") == -1) {
+		if(s.find(":") == -1) {
 			cout << "\t";
 		}
 		cout << s << endl;
@@ -93,18 +94,18 @@ using namespace std;
 	}
 // [=======Compilation tools=======]
 	// Variables & Instances
-	set<string> DeclaredVariables; // Set of declared variables
 	enum OPREL {EQU, DIFF, INF, SUP, INFE, SUPE, WTFR}; // Relationnal Operators
 	enum OPADD {ADD, SUB, OR, WTFA}; // Additionnal Operators
 	enum OPMUL {MUL, DIV, MOD, AND ,WTFM}; // Multiplicative Operators
-	enum TYPE {UNSIGNED_INT, BOOLEAN}; // Data types
+	enum TYPE {INTEGER, BOOLEAN, DOUBLE, CHAR}; // Data types
+	map<string, TYPE> DeclaredVariables; // Set of declared variables
 	// Prototypes
 	bool IsDeclared(string id); // Checks if a variable was declared during the declaration part
 	void Error(string s); // Stops the compiler and returns an error to the terminal at current line
 	bool checkKeyword(const char* key); // Checks if currently read word is a keyword, and checks if it matches a given key
 	// Functions
 	bool IsDeclared(string id) {
-		return DeclaredVariables.find(id)!=DeclaredVariables.end();
+		return DeclaredVariables.find(id) != DeclaredVariables.end();
 	}
 	void Error(string s) {
 		cerr << "[=======Erreur=======]" << endl;
@@ -123,6 +124,10 @@ using namespace std;
 // [=======Syntax rules=======]
 	// Program := [DeclarationPart] StatementPart
 	void Program();
+	// VarDeclarationPart := "VAR" VarDeclaration {";" VarDeclaration} "."
+	void VarDeclarationPart();
+	// VarDeclaration := Ident {"," Ident} ":" Type
+	void VarDeclaration();
 	// DeclarationPart := "[" Letter {"," Letter} "]"
 	void DeclarationPart();
 	// StatementPart := Statement {";" Statement} "."
@@ -162,9 +167,18 @@ using namespace std;
 	OPREL RelationalOperator();
 	// Identifier := Letter{Letter}
 	TYPE Identifier();
+	TYPE CharConst();
+	TYPE Type();
 
 int main() { // Source code on standard input, Output on standard output
-	outputWrite("\t\t# This code was produced by the CERI compiler"); // Header
+	outputWrite("", "This code was produced by the CERI compiler"); // Header
+	outputWrite(".data");
+	outputWrite(".align 8");
+	outputWrite("FormatInteger:	.string \"%llu\"", "To display 64-bit unsigned integers");
+	outputWrite("FormatDouble: .string \"%lf\"", "To display 64-bit doubles");
+	outputWrite("FormatChar: .string \"%c\"", "To display 8-bit chars");
+	outputWrite("FormatTrue: .string \"TRUE\"", "To display the boolean TRUE");
+	outputWrite("FormatFalse: .string \"FALSE\"", "To display the boolean FALSE");
 	readWord(); // Start the reading
 	Program(); // Start the analysis and code production
 	// Trailer for the gcc assembler / linker
@@ -178,38 +192,65 @@ int main() { // Source code on standard input, Output on standard output
 
 // Program := [DeclarationPart] StatementPart
 void Program() {
-	if(compareType(RBRACKET)) {
-		DeclarationPart();
+	if(checkKeyword("VAR")) {
+		VarDeclarationPart();
 	}
 	StatementPart();
 }
 
-// DeclarationPart := "[" Ident {"," Ident} "]"
-void DeclarationPart(){
-	if(!compareType(RBRACKET)) {
-		Error("caractère '[' attendu");
+// VarDeclarationPart := "VAR" VarDeclaration {";" VarDeclaration} "."
+void VarDeclarationPart() {
+	if(!checkKeyword("VAR")) {
+		Error("Mot clé 'VAR' attendu.");
 	}
-	outputWrite(".data");
-	outputWrite(".align 8");
-	outputWrite("FormatString1:	.string \"%llu\\n\"");
 	readWord();
-	if(!compareType(ID)) {
-		Error("Un identificater était attendu");
+	VarDeclaration();
+	while(compareType(SEMICOLON)) {
+		readWord();
+		VarDeclaration();
 	}
-	outputWrite(currentWord() + ":\t.quad 0");
-	DeclaredVariables.insert(currentWord());
+	if(!compareType(DOT)) {
+		Error("'.' attendu.");
+	}
+	readWord();
+}
+
+// VarDeclaration := Ident {"," Ident} ":" Type
+void VarDeclaration() {
+	set<string> variableList;
+	if(!compareType(ID)) {
+		Error("Identificateur attendu.");
+	}
+	variableList.insert(currentWord());
 	readWord();
 	while(compareType(COMMA)) {
 		readWord();
-		if(!compareType(ID)) {
-			Error("Un identificateur était attendu");
-		}
-		outputWrite(currentWord() + ":\t.quad 0");
-		DeclaredVariables.insert(currentWord());
+		variableList.insert(currentWord());
 		readWord();
 	}
-	if(!compareType(LBRACKET)) {
-		Error("caractère ']' attendu");
+	if(!compareType(COLON)) {
+		Error("':' attendu.");
+	}
+	readWord();
+	if(!compareType(KEYWORD)) {
+		Error("Type attendu.");
+	}
+	for(set<string>::iterator iterateur = variableList.begin(); iterateur != variableList.end(); ++iterateur) {
+		if(compareWord("INTEGER")) {
+			DeclaredVariables.insert({*iterateur, INTEGER});
+			outputWrite(*iterateur + ":\t.quad 0");
+		} else if(compareWord("BOOLEAN")) {
+			DeclaredVariables.insert({*iterateur, BOOLEAN});
+			outputWrite(*iterateur + ":\t.quad 0");
+		} else if(compareWord("DOUBLE")) {
+			DeclaredVariables.insert({*iterateur, DOUBLE});
+			outputWrite(*iterateur + ":\t.double 0.0");
+		} else if(compareWord("CHAR")) {
+			DeclaredVariables.insert({*iterateur, CHAR});
+			outputWrite(*iterateur + ":\t.byte 0");
+		} else {
+			Error("Mauvais type donné.");
+		}
 	}
 	readWord();
 }
@@ -262,14 +303,24 @@ string AssignementStatement() {
 		cerr << "Erreur : Variable '" << currentWord() << "' non déclarée" << endl;
 		exit(-1);
 	}
-	variable = currentWord();
+	variable = currentWord(); TYPE type = DeclaredVariables[variable];
 	readWord();
 	if(!compareType(ASSIGN)) {
 		Error("caractères ':=' attendus");
 	}
 	readWord();
 	TYPE expressionType = Expression();
-	outputWrite("pop " + variable);
+	if(type != expressionType) {
+		cerr << "Type de la variable : " << type << endl;
+		cerr << "Type de l'expression " << expressionType << endl;
+		Error("Types incompatibles dans l'affectation.");
+	}
+	if(type == CHAR) {
+		outputWrite("pop %rax");
+		outputWrite("movb %al, " + variable);
+	} else {
+		outputWrite("pop " + variable);
+	}
 	return(variable);
 }
 
@@ -283,7 +334,10 @@ void IfStatement() {
 		Error("Mot clé IF attendu");
 	}
 	readWord();
-	Expression();
+	TYPE type = Expression();
+	if(type != BOOLEAN) {
+		Error("Expression booléenne requise pour le IF.");
+	}
 	outputWrite("pop %rax", "The result of the comparison is at the stack top");
 	outputWrite("cmpq $0, %rax", "Comparison");
 	outputWrite("je IfElse" + ifTag, "Jump into the else part if the condition was false");
@@ -314,7 +368,10 @@ void WhileStatement() {
 	}
 	outputWrite("WhileLoop" + whileTagString);
 	readWord();
-	Expression();
+	TYPE type = Expression();
+	if(type != BOOLEAN) {
+		Error("L'expression doit être booléenne pour le WHILE");
+	}
 	outputWrite("pop %rax");
 	outputWrite("cmpq $0, %rax", "If the condition is no longer fulfilled, the loop is finished.");
 	outputWrite("je WhileEnd" + whileTag);
@@ -352,6 +409,14 @@ void ForStatement() {
 	outputWrite("push " + laVar);
 	outputWrite("pop %rbx");
 	outputWrite("cmpq %rbx, %rax", "If we got beyond the stopping point, we stop");
+	int valeurStep;
+	if(checkKeyword("STEP")) {
+		readWord();
+		valeurStep = stoi(currentWord());
+		readWord();
+	} else {
+		valeurStep = 1;
+	}
 	if(isTo) {
 		outputWrite("jb ForEnd" + forTag, "TO");
 	} else {
@@ -364,10 +429,11 @@ void ForStatement() {
 	Statement();
 	outputWrite("push " + laVar);
 	outputWrite("pop %rax");
+	string endIncr = ", %rax";
 	if(isTo) {
-		outputWrite("addq $1, %rax");
+		outputWrite("addq $" + to_string(valeurStep) + endIncr);
 	} else {
-		outputWrite("subq $1, %rax");
+		outputWrite("subq $" + to_string(valeurStep) + endIncr);
 	}
 	outputWrite("push %rax");
 	outputWrite("pop " + laVar, "New value of variable for next check");
@@ -399,30 +465,68 @@ void DisplayStatement() {
 	}
 	readWord();
 	TYPE typeDisplay = Expression();
-	if(typeDisplay != UNSIGNED_INT) {
-		Error("Entier attendu.");
+	unsigned long long displayTag = ++TagNumber;
+
+	switch(typeDisplay) {
+		case INTEGER:
+			outputWrite("pop %rsi", "The value to be displayed");
+			outputWrite("movq $FormatInteger, %rdi");
+			outputWrite("movl $0, %eax");
+			outputWrite("call printf@PLT");
+			break;
+		case BOOLEAN:
+			outputWrite("pop %rdx");
+			outputWrite("cmpq $0, %rdx");
+			outputWrite("je False" + displayTag);
+			outputWrite("movq $FormatTrue, $rdi");
+			outputWrite("jmp Next" + displayTag);
+			outputWrite("False" + displayTag + string(":"));
+			outputWrite("movq $FormatFalse, %rdi");
+			outputWrite("Next" + displayTag + string(":"));
+			outputWrite("call puts@PLT");
+			break;
+		case DOUBLE:
+			outputWrite("movsd (%rsp), %xmm0");
+			outputWrite("subq $16, %rsp");
+			outputWrite("movsd %xmm0, 8(%rsp)");
+			outputWrite("movq $FormatDouble, %rdi");
+			outputWrite("movq $1, %rax");
+			outputWrite("call printf");
+			outputWrite("nop");
+			outputWrite("addq $24, %rsp");
+			break;
+		case CHAR:
+			outputWrite("pop %rsi");
+			outputWrite("movq $FormatChar, %rdi");
+			outputWrite("movl $0, %eax");
+			outputWrite("call printf@PLT");
+			break;
+		default:
+			Error("Type invalide (DISPLAY)");
 	}
-	outputWrite("pop %rdx", "The value to be displayed");
-	outputWrite("movq $FormatString1, %rsi", "\"%llu\\n\"");
-	outputWrite("movl $1, %edi");
-	outputWrite("movl $0, %eax");
-	outputWrite("call __printf_chk@PLT");
 }
 
 // Expression := SimpleExpression [RelationalOperator SimpleExpression]
 TYPE Expression() {
 	OPREL oprel;
-	TYPE aReturn;
-	aReturn = SimpleExpression();
+	TYPE aReturn = SimpleExpression();
 	if(compareType(RELOP)){
 		oprel = RelationalOperator();
 		TYPE newReturn = SimpleExpression();
 		if(aReturn != newReturn) {
 			Error("Erreur de type incompatibles (Expression)");
 		}
-		outputWrite("pop %rax");
-		outputWrite("pop %rbx");
-		outputWrite("cmpq %rax, %rbx");
+		if(aReturn == DOUBLE) {
+			outputWrite("fldl (%rsp)");
+			outputWrite("fldl 8(%rsp)");
+			outputWrite("addq $16, %rsp");
+			outputWrite("fcomip %st(1)");
+			outputWrite("faddp %st(1)");
+		} else {
+			outputWrite("pop %rax");
+			outputWrite("pop %rbx");
+			outputWrite("cmpq %rax, %rbx");
+		}
 		TagNumber += 1;
 		string expTag = to_string(TagNumber);
 		string expTagString = to_string(TagNumber) + string(":");
@@ -470,53 +574,124 @@ TYPE SimpleExpression() {
 		if(aReturn != newReturn) {
 			Error("Erreur de types non compatibles (SimpleExpression)");
 		}
-		outputWrite("pop %rbx", "First operand");
-		outputWrite("pop %rax", "Second operand");
 		switch(adop){
 			case OR:
-				outputWrite("addq %rbx, %rax", "OR");
+				if(newReturn != BOOLEAN) {
+					Error("Booléen requis pour l'opérateur OR");
+				}
+				outputWrite("pop %rbx");
+				outputWrite("pop %rax");
+				outputWrite("orq %rbx, %rax", "OR");
+				outputWrite("push %rax");
 				break;			
 			case ADD:
-				outputWrite("addq %rbx, %rax", "ADD");
+				if(newReturn != INTEGER && newReturn != DOUBLE) {
+					Error("Entier ou Double requis pour l'addition");
+				}
+				if(newReturn == INTEGER) {
+					// Adding integers
+					outputWrite("pop %rbx");
+					outputWrite("pop %rax");
+					outputWrite("addq %rbx, %rax", "ADD");
+					outputWrite("push %rax"); // Store result
+				} else {
+					// Adding doubles
+					outputWrite("fldl 8(%rsp)");
+					outputWrite("fldl (%rsp)");
+					outputWrite("faddp %st(0), %st(1)");
+					outputWrite("fstpl 8(%rsp)");
+					outputWrite("addq %8, %rsp"); // Result on stack top
+				}
 				break;			
 			case SUB:
-				outputWrite("subq %rbx, %rax", "SUB");
+				if(newReturn != INTEGER && newReturn != DOUBLE) {
+					Error("Entier ou Double requis pour la soustraction");
+				}
+				if(newReturn == INTEGER) {
+					// Subbing integers
+					outputWrite("pop %rbx");
+					outputWrite("pop %rax");
+					outputWrite("subq %rbx, %rax", "SUB");
+					outputWrite("push %rax"); // Store result
+				} else {
+					// Subbing doubles
+					outputWrite("fldl (%rsp)");
+					outputWrite("fldl 8(%rsp)");
+					outputWrite("fsubq %st(0), %st(1)");
+					outputWrite("fstpl 8(%rsp)");
+					outputWrite("addq %8, %rsp"); // Result on stack top
+				}
 				break;
 			default:
 				Error("Opérateur Additif (OPADD) attendu.");
 		}
-		outputWrite("push %rax");
 	}
 	return(aReturn);
 }
 
 // Term := Factor {MultiplicativeOperator Factor}
 TYPE Term() {
-	TYPE aReturn;
+	TYPE aReturn; OPMUL mulop;
 	aReturn = Factor();
 	while(compareType(MULOP)){
-		OPMUL mulop = MultiplicativeOperator();		// Save operator in local variable
+		mulop = MultiplicativeOperator();		// Save operator in local variable
 		TYPE newReturn = Factor();
 		if(aReturn != newReturn) {
 			Error("Types non compatibles (Term).");
 		}
-		outputWrite("pop %rbx", "First operand");
-		outputWrite("pop %rax", "Second operand");
 		switch(mulop){
 			case AND:
+				if(newReturn != BOOLEAN) {
+					Error("Type non booléen pour l'opérateur AND.");
+				}
+				outputWrite("pop %rbx", "First operand");
+				outputWrite("pop %rax", "Second operand");
 				outputWrite("mulq %rbx");
-				outputWrite("push %rax", "AND");
+				outputWrite("push %rax", "AND"); // Store result
 				break;
 			case MUL:
-				outputWrite("mulq %rbx");
-				outputWrite("push %rax", "MUL");
+				if(newReturn != INTEGER && newReturn != DOUBLE) {
+					Error("Entier ou Double requis pour la multiplication.");
+				}
+				if(newReturn == INTEGER) {
+					// Multiplying integers
+					outputWrite("pop %rbx", "First operand");
+					outputWrite("pop %rax", "Second operand");
+					outputWrite("mulq %rbx");
+					outputWrite("push %rax", "MUL"); // Store result
+				} else {
+					// Multiplying doubles
+					outputWrite("fldl 8(%rsp)", "First operand in st(0)");
+					outputWrite("fldl (%rsp)", "Second operand in st(1)");
+					outputWrite("fmulp %st(0), %st(1)");
+					outputWrite("fstpl 8(%rsp)");
+					outputWrite("addq $8, %rsp", "MUL"); // Result is on stack top
+				}
 				break;
 			case DIV:
-				outputWrite("movq $0, %rdx");
-				outputWrite("div %rbx"); // Quotient goes to %rax
-				outputWrite("push %rax", "DIV"); // Store quotient
+				if(newReturn != INTEGER && newReturn != DOUBLE) {
+					Error("Entier ou Double requis pour la division.");
+				}
+				if(newReturn == INTEGER) {
+					// Dividing integers
+					outputWrite("pop %rbx", "First operand");
+					outputWrite("pop %rax", "Second operand");
+					outputWrite("movq $0, %rdx");
+					outputWrite("div %rbx");
+					outputWrite("push %rax", "DIV"); // Store quotient
+				} else {
+					// Dividing doubles
+					outputWrite("fldl (%rsp)", "First operand in st(0)");
+					outputWrite("fldl 8(%rsp)", "Second operand in st(1)");
+					outputWrite("fdivp %st(0), %st(1)");
+					outputWrite("fstpl 8(%rsp)");
+					outputWrite("addq $8, %rsp", "DIV"); // Quotient is on stack top
+				}
 				break;
 			case MOD:
+				if(newReturn != INTEGER) {
+					Error("Entier requis pour le modulo.");
+				}
 				outputWrite("movq $0, %rdx");
 				outputWrite("div %rbx"); // Remainder goes to %rdx
 				outputWrite("push %rdx", "MOD"); // Store remainder
@@ -530,31 +705,47 @@ TYPE Term() {
 
 TYPE Factor() {
 	TYPE aReturn;
-	if(compareType(RPARENT)) {
-		readWord();
-		aReturn = Expression();
-		if(!compareType(LPARENT)) {
-			Error("')' était attendu");		// ")" expected
-		} else {
+	switch(current) {
+		case RPARENT:
 			readWord();
-		}
-	} else {
-		if (compareType(NUMBER)) {
-			aReturn = Number();
-		} else {
-				if(compareType(ID))
-					aReturn = Identifier();
-				else
-					Error("'(' ou chiffre ou lettre attendue");
+			aReturn = Expression();
+			if(current != LPARENT) {
+				Error("')' attendu.");
 			}
+			readWord();
+			break;
+		case NUMBER:
+			aReturn = Number();
+			break;
+		case ID:
+			aReturn = Identifier();
+			break;
+		case CHARCONST:
+			aReturn = CharConst();
+			break;
+		default:
+			Error("'(' ou constante ou variable attendue.");
 	}
 	return aReturn;
 }
 
 TYPE Number() {
-	outputWrite("push $" + currentWord());
-	readWord();
-	return(UNSIGNED_INT);
+	string number = currentWord();
+	if(number.find(".") != string::npos) {
+		// We have a double
+		double d = stof(currentWord());
+		unsigned int *i = (unsigned int *) &d; // i points to the const double
+		outputWrite("subq $8, %rsp");
+		outputWrite("movl $" + to_string(*i) + string(", (%rsp)"), "Conversion of " + to_string(d) + string(" (32-bit high part)"));
+		outputWrite("movl $" + to_string(*(i+1)) + string(", 4(%rsp)"), "Conversion of " + to_string(d) + string(" (32-bit low part)"));
+		readWord();
+		return DOUBLE;
+	} else {
+		// We have an integer
+		outputWrite("push $" + currentWord());
+		readWord();
+		return INTEGER;
+	}
 }
 
 // AdditiveOperator := "+" | "-" | "||"
@@ -614,7 +805,40 @@ OPREL RelationalOperator() {
 }
 
 TYPE Identifier() {
+	TYPE type;
+	if(!IsDeclared(lexer->YYText())) {
+		Error("Variable " + currentWord() + " non déclarée");
+	}
+	type = DeclaredVariables[lexer->YYText()];
 	outputWrite("push " + currentWord());
 	readWord();
-	return(UNSIGNED_INT);
+	return(type);
+}
+
+TYPE CharConst() {
+	outputWrite("movq $0, %rax");
+	outputWrite("movb $" + currentWord() + string(", %al"));
+	outputWrite("push %rax", "Push a 64 bit version of " + currentWord());
+	readWord();
+	return(CHAR);
+}
+
+TYPE Type() {
+	if(current != KEYWORD) {
+		Error("Type attendu.");
+	}
+	TYPE type;
+	readWord();
+	if(compareWord("BOOLEAN")) {
+		type = BOOLEAN;
+	} else if(compareWord("INTEGER")) {
+		type = INTEGER;
+	} else if(compareWord("DOUBLE")) {
+		type = DOUBLE;
+	} else if(compareWord("CHAR")) {
+		type = CHAR;
+	} else {
+		Error("Type inconnu.");
+	}
+	return(type);
 }

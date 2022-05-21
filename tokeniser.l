@@ -19,18 +19,17 @@ using namespace std;
 %option c++
 %option yylineno
 
-stringconst  \"[^\n"]+\"
+charconst	\'\\?.\'
 ws      [ \t\n\r]+
 alpha   [A-Za-z]
 digit   [0-9]
-number  {digit}+
+number  {digit}+(\.{digit}+)?
 id	{alpha}({alpha}|{digit})*
 addop	(\+|\-|\|\|)
 mulop	(\*|\/|%|\&\&)
 relop	(\<|\>|"=="|\<=|\>=|!=)
 unknown [^\"A-Za-z0-9 \n\r\t\(\)\<\>\=\!\%\&\|\}\-\;\.]+
-keyword ("IF"|"THEN"|"ELSE"|"WHILE"|"DO"|"FOR"|"TO"|"DOWNTO"|"BEGIN"|"END"|"EXIT"|"DISPLAY")
-
+keyword ("IF"|"THEN"|"ELSE"|"WHILE"|"DO"|"FOR"|"TO"|"DOWNTO"|"STEP"|"BEGIN"|"END"|"EXIT"|"DISPLAY"|"VAR"|"INTEGER"|"BOOLEAN"|"DOUBLE"|"CHAR")
 %%
 
 {addop}		return ADDOP;
@@ -39,13 +38,14 @@ keyword ("IF"|"THEN"|"ELSE"|"WHILE"|"DO"|"FOR"|"TO"|"DOWNTO"|"BEGIN"|"END"|"EXIT
 {number}	return NUMBER;
 {keyword}	return KEYWORD;
 {id}		return ID;
-{stringconst}	return STRINGCONST;
+{charconst}	return CHARCONST;
 "["		return RBRACKET;
 "]"		return LBRACKET;
 ","		return COMMA;
 ";"		return SEMICOLON;
+":"		return COLON;
 "."		return DOT;
-":="		return ASSIGN;
+":="	return ASSIGN;
 "("		return RPARENT;
 ")"		return LPARENT;
 "!"		return NOT;

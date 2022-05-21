@@ -1,0 +1,4 @@
+CaseStatement := "CASE" EXpression OF CaseListElement {; CASE LIST ELEMENT} END
+CaseListElement := CaseLabelList : Statement | Empty
+CaseLabelList := Constant {, Constant}
+Empty :=

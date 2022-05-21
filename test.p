@@ -1,14 +1,8 @@
-[a,b]
+VAR
+	a,b : INTEGER;
+	c : CHAR;
+	d : DOUBLE.
 
-FOR a := 1 TO 10 DO
-BEGIN
-	b := 1;
-	WHILE b < a DO
-	BEGIN
-		IF a%b == 0 THEN
-		BEGIN
-			DISPLAY b
-		END;
-		b := b + 1
-	END
-END.
+d := 7.0;
+DISPLAY d;
+DISPLAY '\n'.
