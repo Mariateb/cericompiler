@@ -135,7 +135,7 @@ using namespace std;
 
 	// Statement := AssignementStatement | IfStatement | WhileStatement | ForStatement | BlockStatement
 	void Statement();
-	// AssignementStatement := Identifier ":=" Expression
+	// AssignementStatement := Identifier ":=" "TRUE"|"FALSE"|Expression
 	string AssignementStatement();
 	// IfStatement := "IF" Expression "THEN" Statement [ "ELSE" Statement ]
 	void IfStatement();
@@ -145,6 +145,14 @@ using namespace std;
 	void ForStatement();
 	// BlockStatement := "BEGIN" Statement { ";" Statement } "END"
 	void BlockStatement();
+	// CaseStatement := "CASE" Expression OF CaseListElement {; CASE LIST ELEMENT} END
+	void CaseStatement();
+	// CaseListElement := CaseLabelList : Statement | Empty
+	TYPE CaseListElement(string tag, string tag2);
+	// CaseLabelList := Constant {, Constant}
+	TYPE CaseLabelList(string tag, string tag2);
+	// RepeatUntilStatement := "REPEAT" Statement "UNTIL" Expression
+	void RepeatUntilStatement();
 	// DisplayStatement := "DISPLAY" Expression
 	void DisplayStatement();
 
@@ -169,6 +177,8 @@ using namespace std;
 	TYPE Identifier();
 	TYPE CharConst();
 	TYPE Type();
+	// Constant := Number | CharConst
+	TYPE Constant();
 
 int main() { // Source code on standard input, Output on standard output
 	outputWrite("", "This code was produced by the CERI compiler"); // Header
@@ -287,13 +297,17 @@ void Statement() {
 			BlockStatement();
 		} else if (checkKeyword("DISPLAY")) {
 			DisplayStatement();
+		} else if (checkKeyword("CASE")) {
+			CaseStatement();
+		} else if (checkKeyword("REPEAT")) {
+			RepeatUntilStatement();
 		} else {
 			Error("Identificateur ou mot-clé attendus.");
 		}
 	}
 }
 
-// AssignementStatement := Identifier ":=" Expression
+// AssignementStatement := Identifier ":=" "TRUE"|"FALSE"|Expression
 string AssignementStatement() {
 	string variable;
 	if(!compareType(ID)) {
@@ -309,7 +323,18 @@ string AssignementStatement() {
 		Error("caractères ':=' attendus");
 	}
 	readWord();
-	TYPE expressionType = Expression();
+	TYPE expressionType;
+	if(compareWord("TRUE")) {
+		outputWrite("push $0xFFFFFFFFFFFFFFFF");
+		expressionType = BOOLEAN;
+		readWord();
+	} else if(compareWord("FALSE")) {
+		outputWrite("push $0");
+		expressionType = BOOLEAN;
+		readWord();
+	} else {
+		expressionType = Expression();
+	}
 	if(type != expressionType) {
 		cerr << "Type de la variable : " << type << endl;
 		cerr << "Type de l'expression " << expressionType << endl;
@@ -458,6 +483,129 @@ void BlockStatement() {
 	readWord();
 }
 
+// CaseStatement := "CASE" Expression OF CaseListElement {; CaseListElement} END
+void CaseStatement() {
+	// caseTag est le tag qui permet de différencier les différentes instructions case entre elles
+	// caseTag2 est le tag qui permet de différencier les différents checks d'un même tag entre eux
+	// une instruction case aura la forme CaseBegin1
+	// mais un check aura la forme CaseCheck1and4 par exemple
+	// ces deux tags se transmettent par paramètre aux autres fonctions, sous le nom de tag et tag2
+	string caseTag = to_string(++TagNumber);
+	unsigned long long caseTag2 = 1;
+	outputWrite("CaseBegin" + caseTag + string(":"));
+	if(!checkKeyword("CASE")) {
+		Error("CASE attendu");
+	}
+	readWord();
+	TYPE typeCase = Expression();
+	outputWrite("pop %rcx");
+	if(!checkKeyword("OF")) {
+		Error("OF attendu");
+	}
+	readWord();
+	TYPE typeCaseList = CaseListElement(caseTag, to_string(caseTag2));
+	if(typeCase != typeCaseList) {
+		Error("Les types ne correspondent pas pour le case.");
+	}
+	while(compareType(SEMICOLON)) {
+		caseTag2++;
+		readWord();
+		TYPE typeCaseList = CaseListElement(caseTag, to_string(caseTag2));
+		if(typeCase != typeCaseList) {
+			Error("Les types ne correspondent pas pour le case.");
+		}
+	}
+	if(!checkKeyword("END")) {
+		Error("END attendu");
+	}
+	// On fait un tag casecheck final qui ne servira qu'à amener le dernier check vers la fin
+	outputWrite("CaseCheck" + caseTag + string("and") + to_string(++caseTag2) + string(":"));
+	outputWrite("CaseEnd" + caseTag + string(":"));
+	readWord();
+}
+
+// CaseListElement := CaseLabelList : Statement | Empty
+TYPE CaseListElement(string tag, string tag2) {
+	outputWrite("CaseCheck" + tag + string("and") + tag2 + string(":"));
+	TYPE type = CaseLabelList(tag, tag2);
+	if(!compareType(COLON)) {
+		Error(": attendu");
+	}
+	readWord();
+	outputWrite("CaseAction" + tag + string("and") + tag2 + string(":"));
+	if(!compareType(SEMICOLON) && !compareWord("END")) {
+		Statement();
+	}
+	outputWrite("jmp CaseEnd" + tag); // équivalent du break
+	return(type);
+}
+
+// CaseLabelList := Constant {, Constant}
+TYPE CaseLabelList(string tag, string tag2) {
+	TYPE type = Constant();
+	// tag3 est le tag du check suivant, peu importe si il existe ou non
+	string tag3 = to_string(stoi(tag2) + 1);
+	outputWrite("pop %rbx");
+	outputWrite("cmpq %rcx, %rbx");
+	outputWrite("je CaseAction" + tag + string("and") + tag2); // si on a trouvé une valeur qui correspond, on va vers le statement associé
+	while(compareType(COMMA)) {
+		readWord();
+		TYPE newType = Constant();
+		outputWrite("pop %rbx");
+		outputWrite("cmpq %rcx, %rbx");
+		outputWrite("je CaseAction" + tag + string("and") + tag2); // si on a trouvé une valeur qui correspond, on va vers le statement associé
+		if(type == DOUBLE) {
+			Error("Le CASE ne prend pas de doubles");
+		}
+		if(type != newType) {
+			Error("Les types ne correspondent pas entre eux (CaseLabelList)");
+		}
+	}
+	outputWrite("jmp CaseCheck" + tag + string("and") + tag3); // si aucun des checks n'a fonctionné, on passe au suivant
+	return(type);
+}
+
+TYPE Constant() {
+	TYPE type;
+	if(compareType(NUMBER)) {
+		type = Number();
+	} else if(compareType(CHARCONST)) {
+		CharConst();
+		type = CHAR;
+	} else if(checkKeyword("TRUE")) {
+		outputWrite("push $0xFFFFFFFFFFFFFFFF");
+		type = BOOLEAN;
+		readWord();
+	} else if(checkKeyword("FALSE")) {
+		outputWrite("push $0");
+		type = BOOLEAN;
+		readWord();
+	} else {
+		Error("Constante invalide");
+	}
+	return(type);
+}
+
+// RepeatUntilStatement := "REPEAT" Statement "UNTIL" Expression
+void RepeatUntilStatement() {
+	string repeatTag = to_string(++TagNumber);
+	outputWrite("RepeatUntilStart" + repeatTag + string(":"));
+	if(!checkKeyword("REPEAT")) {
+		Error("REPEAT attendu");
+	}
+	readWord();
+	Statement();
+	if(!checkKeyword("UNTIL")) {
+		Error("UNTIL attendu");
+	}
+	readWord();
+	Expression();
+	outputWrite("pop %rax");
+	outputWrite("cmpq $0, %rax");
+	outputWrite("je RepeatUntilStart" + repeatTag);
+	outputWrite("RepeatUntilEnd" + repeatTag + string(":"));
+}
+
 // PrintStatement := "DISPLAY" Expression
 void DisplayStatement() {
 	if(!checkKeyword("DISPLAY")) {
@@ -600,7 +748,7 @@ TYPE SimpleExpression() {
 					outputWrite("fldl (%rsp)");
 					outputWrite("faddp %st(0), %st(1)");
 					outputWrite("fstpl 8(%rsp)");
-					outputWrite("addq %8, %rsp"); // Result on stack top
+					outputWrite("addq $8, %rsp"); // Result on stack top
 				}
 				break;			
 			case SUB:
@@ -619,7 +767,7 @@ TYPE SimpleExpression() {
 					outputWrite("fldl 8(%rsp)");
 					outputWrite("fsubq %st(0), %st(1)");
 					outputWrite("fstpl 8(%rsp)");
-					outputWrite("addq %8, %rsp"); // Result on stack top
+					outputWrite("addq $8, %rsp"); // Result on stack top
 				}
 				break;
 			default:
@@ -821,24 +969,4 @@ TYPE CharConst() {
 	outputWrite("push %rax", "Push a 64 bit version of " + currentWord());
 	readWord();
 	return(CHAR);
-}
-
-TYPE Type() {
-	if(current != KEYWORD) {
-		Error("Type attendu.");
-	}
-	TYPE type;
-	readWord();
-	if(compareWord("BOOLEAN")) {
-		type = BOOLEAN;
-	} else if(compareWord("INTEGER")) {
-		type = INTEGER;
-	} else if(compareWord("DOUBLE")) {
-		type = DOUBLE;
-	} else if(compareWord("CHAR")) {
-		type = CHAR;
-	} else {
-		Error("Type inconnu.");
-	}
-	return(type);
 }

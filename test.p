@@ -1,8 +1,19 @@
 VAR
-	a,b : INTEGER;
-	c : CHAR;
-	d : DOUBLE.
+	a : BOOLEAN;
+	b : DOUBLE.
 
-d := 7.0;
-DISPLAY d;
+a := TRUE;
+
+IF a THEN
+BEGIN
+	b := 4.54124
+END
+ELSE
+BEGIN
+	b := 6.66666
+END;
+b := b + 4.1245;
+
+DISPLAY b;
 DISPLAY '\n'.
+

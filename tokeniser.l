@@ -29,7 +29,7 @@ addop	(\+|\-|\|\|)
 mulop	(\*|\/|%|\&\&)
 relop	(\<|\>|"=="|\<=|\>=|!=)
 unknown [^\"A-Za-z0-9 \n\r\t\(\)\<\>\=\!\%\&\|\}\-\;\.]+
-keyword ("IF"|"THEN"|"ELSE"|"WHILE"|"DO"|"FOR"|"TO"|"DOWNTO"|"STEP"|"BEGIN"|"END"|"EXIT"|"DISPLAY"|"VAR"|"INTEGER"|"BOOLEAN"|"DOUBLE"|"CHAR")
+keyword ("IF"|"THEN"|"ELSE"|"WHILE"|"DO"|"FOR"|"TO"|"DOWNTO"|"STEP"|"CASE"|"OF"|"REPEAT"|"UNTIL"|"BEGIN"|"END"|"EXIT"|"DISPLAY"|"VAR"|"INTEGER"|"BOOLEAN"|"DOUBLE"|"CHAR"|"TRUE"|"FALSE")
 %%
 
 {addop}		return ADDOP;
