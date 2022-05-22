@@ -93,10 +93,7 @@ Allows you to assign a value to a declared variable. You must follow these rules
 
 Examples :
 
-``a := 4
-
+```a := 4
 b := 3.5
-
 c := 'e'
-
-d := FALSE``
+d := FALSE```
