@@ -1,1 +1,1 @@
-DISPLAY 'e'.
+DISPLAY TRUE.

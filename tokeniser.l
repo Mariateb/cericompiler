@@ -19,6 +19,7 @@ using namespace std;
 %option c++
 %option yylineno
 
+stringconst  \"[^\n"]+\"
 charconst	\'\\?.\'
 ws      [ \t\n\r]+
 alpha   [A-Za-z]
@@ -38,6 +39,7 @@ keyword ("IF"|"THEN"|"ELSE"|"WHILE"|"DO"|"FOR"|"TO"|"DOWNTO"|"STEP"|"CASE"|"OF"|
 {number}	return NUMBER;
 {keyword}	return KEYWORD;
 {id}		return ID;
+{stringconst} return STRINGCONST;
 {charconst}	return CHARCONST;
 "["		return RBRACKET;
 "]"		return LBRACKET;

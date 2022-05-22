@@ -82,6 +82,14 @@ To : 64 bit 80x86 assembly langage (AT&T)
 
 > Constant := Number | CharConst
 
+# The Data Types
+
+There are four data types for a variable :
+- INTEGER, an unsigned 64-bit integer
+- BOOLEAN, either TRUE (0x0) or FALSE (0xFFFFFFFFFFFFFFFF).
+- DOUBLE, a 64-bit floating point number
+- CHAR, a 8-bit ASCII value
+
 # The Available Statements
 
 **Assignment Statement :**
@@ -94,8 +102,122 @@ Allows you to assign a value to a declared variable. You must follow these rules
 Examples :
 
 ```
-a := 4
-b := 3.5
-c := 'e'
-d := FALSE
+a := 4;
+b := 3.5;
+c := 'e';
+d := FALSE;
+```
+
+**If Statement :**
+
+Allows you to check the validity of a condition, and act accordingly. You must follow these rules :
+- The condition is an expression of type BOOLEAN.
+
+Examples :
+
+```
+IF a == 0 THEN
+    DISPLAY a
+ELSE
+    DISPLAY b;
+```
+
+**While Statement :**
+
+This statement is a loop that will keep looping the statements inside it until the condition is no longer met. You must follow these rules :
+- The condition is an expression of type BOOLEAN.
+
+Examples :
+
+```
+a := 1.0;
+WHILE a < 4.5 DO
+BEGIN
+    DISPLAY a;
+    a := a + 1.1
+END
+```
+
+**For Statement :**
+
+This statement is a loop with an initialisation and a stopping point. It will keep looping and incrementing until the stopping point is hit. You must follow these rules :
+- The variable assigned must be an INTEGER.
+- You can use TO or DOWNTO to choose between incrementation and decrementation.
+- You can use STEP to change the incrementation value.
+
+Examples :
+```
+FOR a := 4 TO 8 DO
+BEGIN
+    DISPLAY a;
+END;
+
+FOR a := 12 DOWNTO 2 STEP 2 DO
+BEGIN
+    DISPLAY a;
+END
+```
+
+**Block Statement :**
+
+This statement's only purpose is to group other statements inside it.
+
+Examples :
+
+```
+BEGIN
+    DISPLAY a;
+    a := b + 3
+END;
+```
+
+**Case Statement :**
+
+This statement takes a variable (or an expression), and matches it with constants. It there is a match, then the according statement will be executed. You must follow these rules :
+- The expression and constants must ALL be of the same type.
+- You cannot use DOUBLES in the case statement.
+
+Examples :
+
+```
+CASE a + 1 OF
+    3: DISPLAY a;
+    4,5,6:
+        BEGIN
+            a := a + 3;
+            DISPLAY a;
+        END
+    7: DISPLAY b
+END;
+```
+
+**Repeat Statement :**
+
+This statement will loop the statements in it until the condition at the end is met. You must follow these rules :
+- The condition must be a BOOLEAN expression.
+- There is only one statement in the REPEAT statement. If you want more, use the Block.
+
+Examples :
+
+```
+REPEAT
+BEGIN
+	DISPLAY a;
+	a := a + 1
+END
+UNTIL a == 5;
+```
+
+**Display Statement :**
+
+This statement displays the variable or constant given.
+
+Examples :
+
+```
+DISPLAY a;
+DISPLAY b + 3.1;
+DISPLAY 'a';
+DISPLAY '\n';
+DISPLAY FALSE;
 ```

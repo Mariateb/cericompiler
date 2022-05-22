@@ -612,45 +612,59 @@ void DisplayStatement() {
 		Error("Mot clé DISPLAY attendu");
 	}
 	readWord();
-	TYPE typeDisplay = Expression();
-	unsigned long long displayTag = ++TagNumber;
+	if(compareWord("TRUE")) { // We check if it's a boolean constant
+		outputWrite("push $0xFFFFFFFFFFFFFFFF");
+		outputWrite("pop %rdx");
+		outputWrite("movq $FormatTrue, %rdi");
+		outputWrite("call puts@PLT");
+		readWord();
+	} else if(compareWord("FALSE")) {
+		outputWrite("push $0x");
+		outputWrite("pop %rdx");
+		outputWrite("movq $FormatFalse, %rdi");
+		outputWrite("call puts@PLT");
+		readWord();
+	} else { // Else, we use Expression
+		TYPE typeDisplay = Expression();
+		string displayTag = to_string(++TagNumber);
 
-	switch(typeDisplay) {
-		case INTEGER:
-			outputWrite("pop %rsi", "The value to be displayed");
-			outputWrite("movq $FormatInteger, %rdi");
-			outputWrite("movl $0, %eax");
-			outputWrite("call printf@PLT");
-			break;
-		case BOOLEAN:
-			outputWrite("pop %rdx");
-			outputWrite("cmpq $0, %rdx");
-			outputWrite("je False" + displayTag);
-			outputWrite("movq $FormatTrue, $rdi");
-			outputWrite("jmp Next" + displayTag);
-			outputWrite("False" + displayTag + string(":"));
-			outputWrite("movq $FormatFalse, %rdi");
-			outputWrite("Next" + displayTag + string(":"));
-			outputWrite("call puts@PLT");
-			break;
-		case DOUBLE:
-			outputWrite("movsd (%rsp), %xmm0");
-			outputWrite("subq $16, %rsp");
-			outputWrite("movsd %xmm0, 8(%rsp)");
-			outputWrite("movq $FormatDouble, %rdi");
-			outputWrite("movq $1, %rax");
-			outputWrite("call printf");
-			outputWrite("nop");
-			outputWrite("addq $24, %rsp");
-			break;
-		case CHAR:
-			outputWrite("pop %rsi");
-			outputWrite("movq $FormatChar, %rdi");
-			outputWrite("movl $0, %eax");
-			outputWrite("call printf@PLT");
-			break;
-		default:
-			Error("Type invalide (DISPLAY)");
+		switch(typeDisplay) {
+			case INTEGER:
+				outputWrite("pop %rsi", "The value to be displayed");
+				outputWrite("movq $FormatInteger, %rdi");
+				outputWrite("movl $0, %eax");
+				outputWrite("call printf@PLT");
+				break;
+			case BOOLEAN:
+				outputWrite("pop %rdx");
+				outputWrite("cmpq $0, %rdx");
+				outputWrite("je False" + displayTag);
+				outputWrite("movq $FormatTrue, %rdi");
+				outputWrite("jmp Next" + displayTag);
+				outputWrite("False" + displayTag + string(":"));
+				outputWrite("movq $FormatFalse, %rdi");
+				outputWrite("Next" + displayTag + string(":"));
+				outputWrite("call puts@PLT");
+				break;
+			case DOUBLE:
+				outputWrite("movsd (%rsp), %xmm0");
+				outputWrite("subq $16, %rsp");
+				outputWrite("movsd %xmm0, 8(%rsp)");
+				outputWrite("movq $FormatDouble, %rdi");
+				outputWrite("movq $1, %rax");
+				outputWrite("call printf");
+				outputWrite("nop");
+				outputWrite("addq $24, %rsp");
+				break;
+			case CHAR:
+				outputWrite("pop %rsi");
+				outputWrite("movq $FormatChar, %rdi");
+				outputWrite("movl $0, %eax");
+				outputWrite("call printf@PLT");
+				break;
+			default:
+				Error("Type invalide (DISPLAY)");
+		}
 	}
 }
 
