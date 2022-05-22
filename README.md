@@ -6,50 +6,58 @@ To : 64 bit 80x86 assembly langage (AT&T)
 
 **Download the repository :**
 
-> git clone git@framagit.org:jourlin/cericompiler.git
+> git clone https://github.com/Mariateb/cericompiler
 
 **Build the compiler and test it :**
 
-> make test
+> make
 
 **Have a look at the output :**
 
-> gedit test.s
+> nano test.s
 
 **Debug the executable :**
 
-> ddd ./test
+> gdb ./test
 
-**Commit the new version :**
+# The Syntax rules
 
-> git commit -a -m "What's new..."
+**The structure of a program :**
 
-**Send to your framagit :**
+> Program := [DeclarationPart] StatementPart
+> VarDeclarationPart := "VAR" VarDeclaration {";" VarDeclaration} "."
+> VarDeclaration := Ident {"," Ident} ":" Type
+> DeclarationPart := "[" Letter {"," Letter} "]"
+> StatementPart := Statement {";" Statement} "."
 
-> git push -u origin master
+**Statements :**
 
-**Get from your framagit :**
+> Statement := AssignementStatement | IfStatement | WhileStatement | ForStatement | BlockStatement
+> AssignementStatement := Identifier ":=" "TRUE"|"FALSE"|Expression
+> IfStatement := "IF" Expression "THEN" Statement [ "ELSE" Statement ]
+> WhileStatement := "WHILE" Expression DO Statement
+> ForStatement := "FOR" AssignementStatement "To" Expression "DO" Statement
+> BlockStatement := "BEGIN" Statement { ";" Statement } "END"
+> CaseStatement := "CASE" Expression OF CaseListElement {; CASE LIST ELEMENT} END
+> CaseListElement := CaseLabelList : Statement | Empty
+> CaseLabelList := Constant {, Constant}
+> RepeatUntilStatement := "REPEAT" Statement "UNTIL" Expression
+> DisplayStatement := "DISPLAY" Expression
 
-> git pull -u origin master
+**Calculations and expressions :**
 
-**This version Can handle :**
+> Expression := SimpleExpression [RelationalOperator SimpleExpression]
+> SimpleExpression := Term {AdditiveOperator Term}
+> Term := Factor {MultiplicativeOperator Factor}
+> Factor := Number | Letter | "(" Expression ")"| "!" Factor
+> Number := Digit{Digit}
 
-// Program := [DeclarationPart] StatementPart
-// DeclarationPart := "[" Identifier {"," Identifier} "]"
-// StatementPart := Statement {";" Statement} "."
-// Statement := AssignementStatement
-// AssignementStatement := Identifier ":=" Expression
+**Operators, variables and constants :**
 
-// Expression := SimpleExpression [RelationalOperator SimpleExpression]
-// SimpleExpression := Term {AdditiveOperator Term}
-// Term := Factor {MultiplicativeOperator Factor}
-// Factor := Number | Letter | "(" Expression ")"| "!" Factor
-// Number := Digit{Digit}
-// Identifier := Letter {(Letter|Digit)}
+> AdditiveOperator := "+" | "-" | "||"
+> MultiplicativeOperator := "*" | "/" | "%" | "&&"
+> RelationalOperator := "==" | "!=" | "<" | ">" | "<=" | ">="
+> Identifier := Letter{Letter}
+> Constant := Number | CharConst
 
-// AdditiveOperator := "+" | "-" | "||"
-// MultiplicativeOperator := "*" | "/" | "%" | "&&"
-// RelationalOperator := "==" | "!=" | "<" | ">" | "<=" | ">="  
-// Digit := "0"|"1"|"2"|"3"|"4"|"5"|"6"|"7"|"8"|"9"
-// Letter := "a"|...|"z"
-
+# The Available Statements
