@@ -83,3 +83,15 @@ To : 64 bit 80x86 assembly langage (AT&T)
 > Constant := Number | CharConst
 
 # The Available Statements
+
+**Assignment Statement :**
+
+
+Allows you to assign a value to a declared variable. You must follow these rules :
+- The variable and the expression must be of the same type
+- If the variable is a boolean, you must write TRUE or FALSE instead
+Examples :
+``a := 4
+b := 3.5
+c := 'e'
+d := FALSE``
